@@ -1,0 +1,36 @@
+{
+  "trainees": [
+    {
+      "id": 1,
+      "firstName": "Alice",
+      "lastName": "Brown",
+      "username": "Alice.Brown",
+      "password": "A1b2C3d4E5",
+      "active": true,
+      "dateOfBirth": "1995-04-12",
+      "address": "Sample address"
+    }
+  ],
+  "trainers": [
+    {
+      "id": 1,
+      "firstName": "John",
+      "lastName": "Smith",
+      "username": "John.Smith",
+      "password": "F6g7H8i9J0",
+      "active": true,
+      "specialization": "FITNESS"
+    }
+  ],
+  "trainings": [
+    {
+      "id": 1,
+      "traineeId": 1,
+      "trainerId": 1,
+      "name": "Initial fitness session",
+      "trainingType": "FITNESS",
+      "date": "2026-06-22",
+      "durationMinutes": 60
+    }
+  ]
+}
