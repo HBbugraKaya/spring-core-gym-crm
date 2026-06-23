@@ -1,0 +1,42 @@
+# Maven
+target/
+dependency-reduced-pom.xml
+
+# Java
+*.class
+*.jar
+*.war
+*.ear
+hs_err_pid*
+
+# Logs
+*.log
+logs/
+
+# IntelliJ IDEA
+.idea/
+*.iml
+*.iws
+*.ipr
+
+# Eclipse
+.classpath
+.project
+.settings/
+
+# VS Code
+.vscode/
+
+# Operating systems
+.DS_Store
+Thumbs.db
+
+# Codex workspace metadata
+.agents/
+.codex/
+work/
+outputs/
+
+# Local task references
+Task_Spring_Core*.pdf
+kriterler.md
