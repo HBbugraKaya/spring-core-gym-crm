@@ -41,13 +41,13 @@ class SpringContextIntegrationTest {
     }
 
     @Test
-    void storageConfigCreatesIndependentConcurrentMaps() {
+    void storageConfigCreatesIndependentMaps() {
         StorageConfig config = new StorageConfig();
 
         assertThat(config.traineeStorage()).isEmpty();
         assertThat(config.trainerStorage()).isEmpty();
         assertThat(config.trainingStorage()).isEmpty();
-        assertThat(config.traineeStorage().getClass().getSimpleName()).isEqualTo("ConcurrentHashMap");
+        assertThat(config.traineeStorage().getClass().getSimpleName()).isEqualTo("HashMap");
     }
 
     @Test

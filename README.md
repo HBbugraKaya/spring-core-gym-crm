@@ -23,7 +23,7 @@ Linux/macOS:
 ./mvnw clean verify
 ```
 
-The JaCoCo line coverage threshold is 80%. The current test suite has 43 tests and 97.32% line coverage. The HTML coverage report is generated at `target/site/jacoco/index.html` after the build.
+The JaCoCo line coverage threshold is 80%. The current test suite has more than 80% line coverage. The HTML coverage report is generated at `target/site/jacoco/index.html` after the build.
 
 ## Run
 
@@ -46,7 +46,7 @@ The default property file is `config/application.properties`, and the initial da
 ## Implementation Notes
 
 - Spring context is configured with annotation-based and Java-based configuration.
-- Each storage is a separate Spring bean backed by `ConcurrentHashMap`.
+- Each storage is a separate Spring bean backed by a Java `HashMap`.
 - Initial data is loaded from a file during application startup using a `BeanPostProcessor`.
 - DAO dependencies are injected through setter injection.
 - Service beans are injected into `GymFacade` through constructor injection.

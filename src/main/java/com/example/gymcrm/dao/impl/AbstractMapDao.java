@@ -8,22 +8,20 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.atomic.AtomicLong;
 
 abstract class AbstractMapDao<T> {
     private final Logger logger = LoggerFactory.getLogger(getClass());
-    private final AtomicLong sequence = new AtomicLong();
     private Map<Long, T> storage;
+    private long sequence;
 
     protected final void initializeStorage(Map<Long, T> storage) {
         this.storage = storage;
-        long highestId = storage.keySet().stream().mapToLong(Long::longValue).max().orElse(0L);
-        sequence.set(highestId);
+        sequence = storage.keySet().stream().mapToLong(Long::longValue).max().orElse(0L);
     }
 
     protected final T createEntity(T entity) {
         requireStorage();
-        long id = sequence.incrementAndGet();
+        long id = ++sequence;
         setId(entity, id);
         storage.put(id, entity);
         logger.info("Created {} id={}", entityType(), id);

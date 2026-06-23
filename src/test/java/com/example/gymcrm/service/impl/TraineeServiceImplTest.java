@@ -62,21 +62,6 @@ class TraineeServiceImplTest {
         assertThat(result.getAddress()).isEqualTo("Address");
         assertThat(result.getUsername()).isEqualTo("Alice.Brown");
         assertThat(result.getPassword()).isEqualTo("A1b2C3d4E5");
-        verify(usernameGenerator).confirm("Alice.Brown");
-    }
-
-    @Test
-    void releasesUsernameWhenCreateFails() {
-        RuntimeException failure = new RuntimeException("database unavailable");
-        when(usernameGenerator.generate("Alice", "Brown")).thenReturn("Alice.Brown");
-        when(passwordGenerator.generate()).thenReturn("A1b2C3d4E5");
-        when(traineeDao.create(any())).thenThrow(failure);
-
-        assertThatThrownBy(() -> service.create(new CreateTraineeCommand(
-                "Alice", "Brown", LocalDate.of(1995, 4, 12), "Address", true)))
-                .isSameAs(failure);
-
-        verify(usernameGenerator).release("Alice.Brown");
     }
 
     @Test

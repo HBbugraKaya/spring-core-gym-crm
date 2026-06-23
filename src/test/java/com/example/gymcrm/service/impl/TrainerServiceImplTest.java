@@ -21,7 +21,6 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -56,20 +55,6 @@ class TrainerServiceImplTest {
         assertThat(result.getUsername()).isEqualTo("John.Smith");
         assertThat(result.getPassword()).isEqualTo("A1b2C3d4E5");
         assertThat(result.getSpecialization()).isEqualTo(TrainingType.FITNESS);
-        verify(usernameGenerator).confirm("John.Smith");
-    }
-
-    @Test
-    void releasesUsernameWhenCreateFails() {
-        RuntimeException failure = new RuntimeException("database unavailable");
-        when(usernameGenerator.generate("John", "Smith")).thenReturn("John.Smith");
-        when(passwordGenerator.generate()).thenReturn("A1b2C3d4E5");
-        when(trainerDao.create(any())).thenThrow(failure);
-
-        assertThatThrownBy(() -> service.create(new CreateTrainerCommand(
-                "John", "Smith", TrainingType.FITNESS, true))).isSameAs(failure);
-
-        verify(usernameGenerator).release("John.Smith");
     }
 
     @Test

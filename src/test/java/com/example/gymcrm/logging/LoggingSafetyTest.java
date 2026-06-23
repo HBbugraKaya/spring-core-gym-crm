@@ -9,7 +9,7 @@ import org.junit.jupiter.api.Test;
 import org.slf4j.LoggerFactory;
 
 import java.time.LocalDate;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.HashMap;
 import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -24,7 +24,7 @@ class LoggingSafetyTest {
 
         try {
             TraineeDaoImpl dao = new TraineeDaoImpl();
-            dao.setStorage(new ConcurrentHashMap<>());
+            dao.setStorage(new HashMap<>());
             Trainee trainee = new Trainee(null, "Alice", "Brown", "Alice.Brown", "secret1234",
                     true, LocalDate.of(1995, 4, 12), "Private address");
 

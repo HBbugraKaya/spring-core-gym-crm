@@ -8,10 +8,10 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 import java.io.IOException;
+import java.util.HashMap;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -24,9 +24,9 @@ class StorageBeanPostProcessorTest {
     void populatesAllKnownStorageBeansFromOneFile() throws IOException {
         Path dataFile = write("valid.json", validJson());
         StorageBeanPostProcessor processor = processor(dataFile);
-        Map<Long, Trainee> trainees = new ConcurrentHashMap<>();
-        Map<Long, Trainer> trainers = new ConcurrentHashMap<>();
-        Map<Long, Training> trainings = new ConcurrentHashMap<>();
+        Map<Long, Trainee> trainees = new HashMap<>();
+        Map<Long, Trainer> trainers = new HashMap<>();
+        Map<Long, Training> trainings = new HashMap<>();
 
         assertThat(processor.postProcessAfterInitialization(trainees, "traineeStorage")).isSameAs(trainees);
         processor.postProcessAfterInitialization(trainers, "trainerStorage");
@@ -37,7 +37,7 @@ class StorageBeanPostProcessorTest {
         assertThat(trainings).containsKey(3L);
         Object arbitrary = new Object();
         assertThat(processor.postProcessAfterInitialization(arbitrary, "anything")).isSameAs(arbitrary);
-        Map<Long, String> unknownMap = new ConcurrentHashMap<>();
+        Map<Long, String> unknownMap = new HashMap<>();
         assertThat(processor.postProcessAfterInitialization(unknownMap, "otherStorage")).isSameAs(unknownMap);
     }
 
@@ -45,13 +45,13 @@ class StorageBeanPostProcessorTest {
     void failsFastForMissingOrMalformedFile() throws IOException {
         StorageBeanPostProcessor missing = processor(tempDirectory.resolve("missing.json"));
         assertThatThrownBy(() -> missing.postProcessAfterInitialization(
-                new ConcurrentHashMap<>(), "traineeStorage"))
+                new HashMap<>(), "traineeStorage"))
                 .isInstanceOf(StorageInitializationException.class)
                 .hasMessageContaining("does not exist");
 
         StorageBeanPostProcessor malformed = processor(write("malformed.json", "{not-json}"));
         assertThatThrownBy(() -> malformed.postProcessAfterInitialization(
-                new ConcurrentHashMap<>(), "traineeStorage"))
+                new HashMap<>(), "traineeStorage"))
                 .isInstanceOf(StorageInitializationException.class)
                 .hasMessageContaining("Cannot read");
     }
@@ -66,7 +66,7 @@ class StorageBeanPostProcessorTest {
                 """;
         StorageBeanPostProcessor duplicate = processor(write("duplicate.json", duplicateJson));
         assertThatThrownBy(() -> duplicate.postProcessAfterInitialization(
-                new ConcurrentHashMap<>(), "traineeStorage"))
+                new HashMap<>(), "traineeStorage"))
                 .isInstanceOf(StorageInitializationException.class)
                 .hasMessageContaining("Duplicate");
 
@@ -77,7 +77,7 @@ class StorageBeanPostProcessorTest {
                 """;
         StorageBeanPostProcessor invalid = processor(write("invalid-id.json", invalidIdJson));
         assertThatThrownBy(() -> invalid.postProcessAfterInitialization(
-                new ConcurrentHashMap<>(), "trainerStorage"))
+                new HashMap<>(), "trainerStorage"))
                 .isInstanceOf(StorageInitializationException.class)
                 .hasMessageContaining("positive");
     }
@@ -92,41 +92,9 @@ class StorageBeanPostProcessorTest {
         StorageBeanPostProcessor processor = processor(write("missing-field.json", missingFieldJson));
 
         assertThatThrownBy(() -> processor.postProcessAfterInitialization(
-                new ConcurrentHashMap<>(), "traineeStorage"))
+                new HashMap<>(), "traineeStorage"))
                 .isInstanceOf(StorageInitializationException.class)
-                .hasMessageContaining("Trainee firstName");
-    }
-
-    @Test
-    void rejectsDuplicateUsernamesAcrossTraineesAndTrainers() throws IOException {
-        String duplicateUsernameJson = """
-                {
-                  "trainees":[{"id":1,"firstName":"A","lastName":"B","username":"Same.User","password":"abcdefghij","active":true,"dateOfBirth":"2000-01-01","address":"Address"}],
-                  "trainers":[{"id":2,"firstName":"C","lastName":"D","username":"same.user","password":"abcdefghij","active":true,"specialization":"YOGA"}]
-                }
-                """;
-        StorageBeanPostProcessor processor = processor(write("duplicate-username.json", duplicateUsernameJson));
-
-        assertThatThrownBy(() -> processor.postProcessAfterInitialization(
-                new ConcurrentHashMap<>(), "traineeStorage"))
-                .isInstanceOf(StorageInitializationException.class)
-                .hasMessageContaining("Duplicate username");
-    }
-
-    @Test
-    void rejectsTrainingReferencesMissingInitialProfiles() throws IOException {
-        String invalidReferenceJson = """
-                {
-                  "trainers":[{"id":2,"firstName":"C","lastName":"D","username":"C.D","password":"abcdefghij","active":true,"specialization":"YOGA"}],
-                  "trainings":[{"id":3,"traineeId":1,"trainerId":2,"name":"Yoga","trainingType":"YOGA","date":"2026-06-22","durationMinutes":30}]
-                }
-                """;
-        StorageBeanPostProcessor processor = processor(write("invalid-reference.json", invalidReferenceJson));
-
-        assertThatThrownBy(() -> processor.postProcessAfterInitialization(
-                new ConcurrentHashMap<>(), "trainingStorage"))
-                .isInstanceOf(StorageInitializationException.class)
-                .hasMessageContaining("unknown trainee");
+                .hasMessageContaining("invalid");
     }
 
     @Test

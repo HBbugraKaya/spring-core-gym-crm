@@ -47,18 +47,10 @@ public class TrainerServiceImpl implements TrainerService {
         String lastName = requireText(command.lastName(), "lastName");
         TrainingType specialization = requireNonNull(command.specialization(), "specialization");
 
-        String password = passwordGenerator.generate();
-        String username = usernameGenerator.generate(firstName, lastName);
-        Trainer trainer = new Trainer(null, firstName, lastName, username, password,
+        Trainer trainer = new Trainer(null, firstName, lastName,
+                usernameGenerator.generate(firstName, lastName), passwordGenerator.generate(),
                 command.active(), specialization);
-        try {
-            Trainer created = trainerDao.create(trainer);
-            usernameGenerator.confirm(username);
-            return created;
-        } catch (RuntimeException exception) {
-            usernameGenerator.release(username);
-            throw exception;
-        }
+        return trainerDao.create(trainer);
     }
 
     @Override

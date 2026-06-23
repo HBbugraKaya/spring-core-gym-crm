@@ -48,18 +48,10 @@ public class TraineeServiceImpl implements TraineeService {
         LocalDate dateOfBirth = requireNonNull(command.dateOfBirth(), "dateOfBirth");
         String address = requireText(command.address(), "address");
 
-        String password = passwordGenerator.generate();
-        String username = usernameGenerator.generate(firstName, lastName);
-        Trainee trainee = new Trainee(null, firstName, lastName, username, password,
+        Trainee trainee = new Trainee(null, firstName, lastName,
+                usernameGenerator.generate(firstName, lastName), passwordGenerator.generate(),
                 command.active(), dateOfBirth, address);
-        try {
-            Trainee created = traineeDao.create(trainee);
-            usernameGenerator.confirm(username);
-            return created;
-        } catch (RuntimeException exception) {
-            usernameGenerator.release(username);
-            throw exception;
-        }
+        return traineeDao.create(trainee);
     }
 
     @Override

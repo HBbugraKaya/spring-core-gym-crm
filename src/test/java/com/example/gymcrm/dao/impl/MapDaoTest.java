@@ -8,8 +8,8 @@ import com.example.gymcrm.exception.EntityNotFoundException;
 import org.junit.jupiter.api.Test;
 
 import java.time.LocalDate;
+import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -17,7 +17,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 class MapDaoTest {
     @Test
     void traineeDaoSupportsFullCrudAndContinuesSeededSequence() {
-        Map<Long, Trainee> storage = new ConcurrentHashMap<>();
+        Map<Long, Trainee> storage = new HashMap<>();
         storage.put(5L, trainee(5L, "Seed"));
         TraineeDaoImpl dao = new TraineeDaoImpl();
         dao.setStorage(storage);
@@ -36,7 +36,7 @@ class MapDaoTest {
     @Test
     void traineeDaoRejectsMissingUpdatesAndDeletes() {
         TraineeDaoImpl dao = new TraineeDaoImpl();
-        dao.setStorage(new ConcurrentHashMap<>());
+        dao.setStorage(new HashMap<>());
 
         assertThatThrownBy(() -> dao.update(trainee(99L, "Missing")))
                 .isInstanceOf(EntityNotFoundException.class)
@@ -48,7 +48,7 @@ class MapDaoTest {
     @Test
     void trainerDaoSupportsCreateUpdateFindAndList() {
         TrainerDaoImpl dao = new TrainerDaoImpl();
-        dao.setStorage(new ConcurrentHashMap<>());
+        dao.setStorage(new HashMap<>());
 
         Trainer trainer = new Trainer(null, "Jane", "Doe", "Jane.Doe", "abcdefghij",
                 true, TrainingType.YOGA);
@@ -62,7 +62,7 @@ class MapDaoTest {
     @Test
     void trainingDaoSupportsCreateFindAndList() {
         TrainingDaoImpl dao = new TrainingDaoImpl();
-        dao.setStorage(new ConcurrentHashMap<>());
+        dao.setStorage(new HashMap<>());
         Training training = new Training(null, 1L, 2L, "Cardio", TrainingType.CARDIO,
                 LocalDate.of(2026, 6, 22), 45);
 
