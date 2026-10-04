@@ -13,6 +13,7 @@ import com.example.gymcrm.service.command.CreateTrainingCommand;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -23,6 +24,9 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -50,40 +54,72 @@ class TrainingServiceImplTest {
         when(trainerDao.findById(2L)).thenReturn(Optional.of(new Trainer()));
         when(trainingDao.create(any())).thenAnswer(invocation -> invocation.getArgument(0, Training.class));
         CreateTrainingCommand command = command();
+        ArgumentCaptor<Training> trainingCaptor = ArgumentCaptor.forClass(Training.class);
 
         Training result = service.create(command);
 
+        verify(traineeDao).findById(1L);
+        verify(trainerDao).findById(2L);
+        verify(trainingDao).create(trainingCaptor.capture());
+        assertThat(result).isSameAs(trainingCaptor.getValue());
         assertThat(result.getTraineeId()).isEqualTo(1L);
         assertThat(result.getTrainerId()).isEqualTo(2L);
         assertThat(result.getName()).isEqualTo("Session");
+        assertThat(result.getTrainingType()).isEqualTo(TrainingType.FITNESS);
+        assertThat(result.getDate()).isEqualTo(LocalDate.of(2026, 6, 22));
         assertThat(result.getDurationMinutes()).isEqualTo(45);
     }
 
     @Test
-    void rejectsMissingTraineeOrTrainer() {
-        when(traineeDao.findById(1L))
-                .thenReturn(Optional.empty())
-                .thenReturn(Optional.of(new Trainee()));
-        when(trainerDao.findById(2L)).thenReturn(Optional.empty());
+    void rejectsMissingTraineeBeforeCheckingTrainerOrCreatingTraining() {
+        when(traineeDao.findById(1L)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> service.create(command()))
                 .isInstanceOf(EntityNotFoundException.class).hasMessageContaining("Trainee");
-        assertThatThrownBy(() -> service.create(command()))
-                .isInstanceOf(EntityNotFoundException.class).hasMessageContaining("Trainer");
+
+        verify(traineeDao).findById(1L);
+        verify(trainerDao, never()).findById(any());
+        verifyNoInteractions(trainingDao);
     }
 
     @Test
-    void rejectsInvalidTrainingAndDelegatesQueries() {
+    void rejectsMissingTrainerBeforeCreatingTraining() {
+        when(traineeDao.findById(1L)).thenReturn(Optional.of(new Trainee()));
+        when(trainerDao.findById(2L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service.create(command()))
+                .isInstanceOf(EntityNotFoundException.class).hasMessageContaining("Trainer");
+
+        verify(traineeDao).findById(1L);
+        verify(trainerDao).findById(2L);
+        verifyNoInteractions(trainingDao);
+    }
+
+    @Test
+    void rejectsInvalidTrainingBeforeCallingCollaborators() {
         assertThatThrownBy(() -> service.create(new CreateTrainingCommand(
                 1L, 2L, "Session", TrainingType.FITNESS, LocalDate.now(), 0)))
                 .isInstanceOf(ValidationException.class);
         assertThatThrownBy(() -> service.create(null)).isInstanceOf(ValidationException.class);
+        assertThatThrownBy(() -> service.create(new CreateTrainingCommand(
+                1L, 2L, " ", TrainingType.FITNESS, LocalDate.now(), 45)))
+                .isInstanceOf(ValidationException.class);
 
+        verifyNoInteractions(traineeDao, trainerDao, trainingDao);
+    }
+
+    @Test
+    void delegatesQueries() {
         Training training = new Training();
         when(trainingDao.findById(1L)).thenReturn(Optional.of(training));
         when(trainingDao.findAll()).thenReturn(List.of(training));
+
         assertThat(service.findById(1L)).containsSame(training);
         assertThat(service.findAll()).containsExactly(training);
+        assertThatThrownBy(() -> service.findById(0L)).isInstanceOf(ValidationException.class);
+
+        verify(trainingDao).findById(1L);
+        verify(trainingDao).findAll();
     }
 
     private static CreateTrainingCommand command() {

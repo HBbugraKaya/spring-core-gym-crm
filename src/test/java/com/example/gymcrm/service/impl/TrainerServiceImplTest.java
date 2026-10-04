@@ -12,6 +12,7 @@ import com.example.gymcrm.service.command.UpdateTrainerCommand;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -21,6 +22,9 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -47,11 +51,17 @@ class TrainerServiceImplTest {
         when(usernameGenerator.generate("John", "Smith")).thenReturn("John.Smith");
         when(passwordGenerator.generate()).thenReturn("A1b2C3d4E5");
         when(trainerDao.create(any())).thenAnswer(invocation -> invocation.getArgument(0));
+        ArgumentCaptor<Trainer> trainerCaptor = ArgumentCaptor.forClass(Trainer.class);
 
         Trainer result = service.create(new CreateTrainerCommand(
                 " John ", " Smith ", TrainingType.FITNESS, true));
 
+        verify(usernameGenerator).generate("John", "Smith");
+        verify(passwordGenerator).generate();
+        verify(trainerDao).create(trainerCaptor.capture());
+        assertThat(result).isSameAs(trainerCaptor.getValue());
         assertThat(result.getFirstName()).isEqualTo("John");
+        assertThat(result.getLastName()).isEqualTo("Smith");
         assertThat(result.getUsername()).isEqualTo("John.Smith");
         assertThat(result.getPassword()).isEqualTo("A1b2C3d4E5");
         assertThat(result.getSpecialization()).isEqualTo(TrainingType.FITNESS);
@@ -71,18 +81,32 @@ class TrainerServiceImplTest {
         assertThat(result.getPassword()).isEqualTo("abcdefghij");
         assertThat(result.getSpecialization()).isEqualTo(TrainingType.YOGA);
         assertThat(result.isActive()).isFalse();
+
+        verify(trainerDao).findById(2L);
+        verify(trainerDao).update(current);
+        verifyNoInteractions(usernameGenerator, passwordGenerator);
     }
 
     @Test
-    void handlesMissingAndInvalidProfiles() {
+    void rejectsMissingTrainerUpdatesWithoutSavingChanges() {
         when(trainerDao.findById(8L)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> service.update(8L,
                 new UpdateTrainerCommand("Missing", "Trainer", TrainingType.YOGA, true)))
                 .isInstanceOf(EntityNotFoundException.class);
+        verify(trainerDao).findById(8L);
+        verify(trainerDao, never()).update(any());
+        verifyNoInteractions(usernameGenerator, passwordGenerator);
+    }
+
+    @Test
+    void rejectsInvalidInputsBeforeCallingCollaborators() {
+        assertThatThrownBy(() -> service.create(null)).isInstanceOf(ValidationException.class);
         assertThatThrownBy(() -> service.create(new CreateTrainerCommand(
                 "John", "Smith", null, true))).isInstanceOf(ValidationException.class);
         assertThatThrownBy(() -> service.findById(null)).isInstanceOf(ValidationException.class);
+
+        verifyNoInteractions(trainerDao, usernameGenerator, passwordGenerator);
     }
 
     @Test

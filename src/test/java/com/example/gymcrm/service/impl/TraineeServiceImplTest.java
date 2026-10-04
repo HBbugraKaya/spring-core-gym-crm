@@ -11,6 +11,7 @@ import com.example.gymcrm.service.command.UpdateTraineeCommand;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -21,7 +22,9 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -52,10 +55,16 @@ class TraineeServiceImplTest {
             trainee.setId(1L);
             return trainee;
         });
+        ArgumentCaptor<Trainee> traineeCaptor = ArgumentCaptor.forClass(Trainee.class);
 
         Trainee result = service.create(new CreateTraineeCommand(
                 " Alice ", " Brown ", LocalDate.of(1995, 4, 12), " Address ", true));
 
+        verify(usernameGenerator).generate("Alice", "Brown");
+        verify(passwordGenerator).generate();
+        verify(traineeDao).create(traineeCaptor.capture());
+        Trainee saved = traineeCaptor.getValue();
+        assertThat(result).isSameAs(saved);
         assertThat(result.getId()).isEqualTo(1L);
         assertThat(result.getFirstName()).isEqualTo("Alice");
         assertThat(result.getLastName()).isEqualTo("Brown");
@@ -78,19 +87,35 @@ class TraineeServiceImplTest {
         assertThat(result.getUsername()).isEqualTo("Original.User");
         assertThat(result.getPassword()).isEqualTo("abcdefghij");
         assertThat(result.isActive()).isFalse();
+
+        verify(traineeDao).findById(2L);
+        verify(traineeDao).update(current);
+        verifyNoInteractions(usernameGenerator, passwordGenerator);
     }
 
     @Test
-    void rejectsMissingOrInvalidUpdates() {
+    void rejectsMissingTraineeUpdatesWithoutSavingChanges() {
         when(traineeDao.findById(9L)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> service.update(9L, new UpdateTraineeCommand(
                 "Missing", "User", LocalDate.now(), "Address", true)))
                 .isInstanceOf(EntityNotFoundException.class);
+        verify(traineeDao).findById(9L);
+        verify(traineeDao, never()).update(any());
+        verifyNoInteractions(usernameGenerator, passwordGenerator);
+    }
+
+    @Test
+    void rejectsInvalidCreateCommandsBeforeCallingCollaborators() {
         assertThatThrownBy(() -> service.create(null)).isInstanceOf(ValidationException.class);
         assertThatThrownBy(() -> service.create(new CreateTraineeCommand(
                 " ", "User", LocalDate.now(), "Address", true)))
                 .isInstanceOf(ValidationException.class);
+        assertThatThrownBy(() -> service.create(new CreateTraineeCommand(
+                "Alice", "User", null, "Address", true)))
+                .isInstanceOf(ValidationException.class);
+
+        verifyNoInteractions(traineeDao, usernameGenerator, passwordGenerator);
     }
 
     @Test
